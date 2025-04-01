@@ -7,29 +7,34 @@
     <link href="https://fonts.cdnfonts.com/css/minecraftia" rel="stylesheet">
     <style>
         html, body {
-            overflow: hidden;
-            height: 100%;
             margin: 0;
             padding: 0;
-            touch-action: none;
-        }
-        canvas {
-            display: block;
-            width: 100%;
             height: 100%;
-            user-select: none;
-            -webkit-user-select: none;
-            -ms-user-select: none;
+            overflow: hidden;
+            background-color: #1a1a2e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
         }
-        body {
+        #gameContainer {
+            position: relative;
+            width: 400px;
+            height: 700px; /* Canvas + интерфейс */
             text-align: center;
             font-family: Arial, sans-serif;
-            background-color: #1a1a2e;
             color: #e94560;
         }
+        canvas {
+            width: 400px;
+            height: 600px;
+            background-color: #0f3460;
+            display: block;
+            border: 1px solid #e94560;
+        }
         h2 {
-            margin: 10px;
-            font-size: 1.2em;
+            margin: 5px 0;
+            font-size: 1em;
         }
         button {
             margin: 5px;
@@ -48,7 +53,7 @@
             box-shadow: 0 6px 15px rgba(255, 51, 102, 0.8);
         }
         #controls {
-            position: fixed;
+            position: absolute;
             bottom: 10px;
             width: 100%;
             display: flex;
@@ -71,7 +76,7 @@
             gap: 10px;
         }
         #shop, #quests, #skinsRoom, #exchangeRoom {
-            position: fixed;
+            position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
@@ -83,8 +88,6 @@
             z-index: 1000;
             width: 80%;
             max-width: 350px;
-        }
-        #shop {
             background: linear-gradient(135deg, #0f3460, #1a1a2e);
             box-shadow: 0 0 20px rgba(233, 69, 96, 0.7);
         }
@@ -92,14 +95,12 @@
             color: #e94560;
             text-shadow: 0 0 5px rgba(233, 69, 96, 0.5);
         }
-        #shop button {
+        #shop button, #exchangeRoom button {
             padding: 8px 15px;
             width: 100%;
             margin: 5px 0;
         }
         #quests {
-            background: linear-gradient(135deg, #0f3460, #1a1a2e);
-            box-shadow: 0 0 20px rgba(233, 69, 96, 0.7);
             max-height: 80vh;
             overflow-y: auto;
         }
@@ -109,26 +110,6 @@
             margin: 5px 0;
             border-radius: 8px;
             color: #fff;
-            transition: background-color 0.3s;
-        }
-        #quests p.completed {
-            background-color: rgba(233, 69, 96, 0.5);
-            text-decoration: line-through;
-        }
-        #skinsRoom {
-            background: linear-gradient(135deg, #1a1a2e, #0f3460);
-            box-shadow: 0 0 15px rgba(233, 69, 96, 0.5);
-            max-height: 80vh;
-            overflow-y: auto;
-        }
-        #exchangeRoom {
-            background: linear-gradient(135deg, #0f3460, #1a1a2e);
-            box-shadow: 0 0 20px rgba(233, 69, 96, 0.7);
-        }
-        #exchangeRoom button {
-            padding: 8px 15px;
-            width: 100%;
-            margin: 5px 0;
         }
         #skinsRoom.open, #shop.open, #quests.open, #exchangeRoom.open {
             opacity: 1;
@@ -166,57 +147,59 @@
         #note {
             color: #ffcc00;
             font-size: 0.9em;
-            margin: 10px;
+            margin: 5px 0;
         }
     </style>
 </head>
 <body>
-    <h2 id="gameTitle">Звёздный Скиталец | Уровень: <span id="level">1</span> | Очки: <span id="score">0</span> | Жизни: <span id="lives">3</span> | Кристаллы: <span id="crystals">0</span></h2>
-    <button id="shopButton">Магазин</button>
-    <button id="questsButton">Квесты</button>
-    <button id="skinsButton">Скины</button>
-    <button id="exchangeButton">Обмен</button>
-    <button id="pauseButton">Пауза</button>
-    <div id="note">Примечание: Если у вас менее 3 жизней, подождите 5 минут для восстановления.</div>
-    <canvas id="gameCanvas"></canvas>
-    <div id="controls">
-        <div id="left-controls">
-            <button id="leftButton" class="control-button"><</button>
-            <button id="rightButton" class="control-button">></button>
+    <div id="gameContainer">
+        <h2 id="gameTitle">Звёздный Скиталец | Уровень: <span id="level">1</span> | Очки: <span id="score">0</span> | Жизни: <span id="lives">3</span> | Кристаллы: <span id="crystals">0</span></h2>
+        <button id="shopButton">Магазин</button>
+        <button id="questsButton">Квесты</button>
+        <button id="skinsButton">Скины</button>
+        <button id="exchangeButton">Обмен</button>
+        <button id="pauseButton">Пауза</button>
+        <div id="note">Примечание: Если у вас менее 3 жизней, подождите 5 минут для восстановления.</div>
+        <canvas id="gameCanvas" width="400" height="600"></canvas>
+        <div id="controls">
+            <div id="left-controls">
+                <button id="leftButton" class="control-button"><</button>
+                <button id="rightButton" class="control-button">></button>
+            </div>
+            <button id="jumpButton" class="control-button">^</button>
         </div>
-        <button id="jumpButton" class="control-button">^</button>
-    </div>
-    <div id="shop">
-        <h3>Магазин</h3>
-        <button onclick="buyItem('speed', 10)">Ускорение (10 кристаллов)</button>
-        <button onclick="buyItem('size', 15)">Увеличение размера (15 кристаллов)</button>
-        <button onclick="buyItem('life', 20)">+1 Жизнь (20 кристаллов)</button>
-        <button onclick="closeShop()">Закрыть</button>
-    </div>
-    <div id="quests">
-        <h3>Квесты</h3>
-        <p id="quest1">Собери 5 кристаллов за игру (Награда: 5 кристаллов)</p>
-        <p id="quest2">Достигни 3 уровня (Награда: 10 кристаллов)</p>
-        <p id="quest3">Собери 50 очков за игру (Награда: 15 кристаллов)</p>
-        <p id="quest4">Прыгни 10 раз за игру (Награда: 5 кристаллов)</p>
-        <p id="quest5">Уклонись от 5 метеоритов (Награда: 10 кристаллов)</p>
-        <p id="quest6">Достигни 10 уровня (Награда: 25 кристаллов)</p>
-        <p id="quest7">Собери 20 кристаллов за игру (Награда: 20 кристаллов)</p>
-        <p id="quest8">Пройди уровень без потери жизней (Награда: 15 кристаллов)</p>
-        <p id="quest9">Набери 100 очков за игру (Награда: 20 кристаллов)</p>
-        <p id="quest10">Купи улучшение в магазине (Награда: 10 кристаллов)</p>
-        <button onclick="closeQuests()">Закрыть</button>
-    </div>
-    <div id="skinsRoom">
-        <h3>Гардеробная</h3>
-        <div id="skinsList"></div>
-        <button onclick="closeSkinsRoom()">Закрыть</button>
-    </div>
-    <div id="exchangeRoom">
-        <h3 id="exchangeTitle">Обмен</h3>
-        <button onclick="exchangePoints(100, 1)">100 очков = 1 кристалл</button>
-        <button onclick="exchangePoints(1000, 15)">1000 очков = 15 кристаллов</button>
-        <button onclick="closeExchange()">Закрыть</button>
+        <div id="shop">
+            <h3>Магазин</h3>
+            <button onclick="buyItem('speed', 10)">Ускорение (10 кристаллов)</button>
+            <button onclick="buyItem('size', 15)">Увеличение размера (15 кристаллов)</button>
+            <button onclick="buyItem('life', 20)">+1 Жизнь (20 кристаллов)</button>
+            <button onclick="closeShop()">Закрыть</button>
+        </div>
+        <div id="quests">
+            <h3>Квесты</h3>
+            <p id="quest1">Собери 5 кристаллов за игру (Награда: 5 кристаллов)</p>
+            <p id="quest2">Достигни 3 уровня (Награда: 10 кристаллов)</p>
+            <p id="quest3">Собери 50 очков за игру (Награда: 15 кристаллов)</p>
+            <p id="quest4">Прыгни 10 раз за игру (Награда: 5 кристаллов)</p>
+            <p id="quest5">Уклонись от 5 метеоритов (Награда: 10 кристаллов)</p>
+            <p id="quest6">Достигни 10 уровня (Награда: 25 кристаллов)</p>
+            <p id="quest7">Собери 20 кристаллов за игру (Награда: 20 кристаллов)</p>
+            <p id="quest8">Пройди уровень без потери жизней (Награда: 15 кристаллов)</p>
+            <p id="quest9">Набери 100 очков за игру (Награда: 20 кристаллов)</p>
+            <p id="quest10">Купи улучшение в магазине (Награда: 10 кристаллов)</p>
+            <button onclick="closeQuests()">Закрыть</button>
+        </div>
+        <div id="skinsRoom">
+            <h3>Гардеробная</h3>
+            <div id="skinsList"></div>
+            <button onclick="closeSkinsRoom()">Закрыть</button>
+        </div>
+        <div id="exchangeRoom">
+            <h3>Обмен</h3>
+            <button onclick="exchangePoints(100, 1)">100 очков = 1 кристалл</button>
+            <button onclick="exchangePoints(1000, 15)">1000 очков = 15 кристаллов</button>
+            <button onclick="closeExchange()">Закрыть</button>
+        </div>
     </div>
     <script>
         const canvas = document.getElementById('gameCanvas');
@@ -239,24 +222,6 @@
         const exchangeRoom = document.getElementById('exchangeRoom');
         const skinsList = document.getElementById('skinsList');
 
-        // Аудио
-        const backgroundTracks = [
-            new Audio('background_sound1.mp3'),
-            new Audio('background_sound2.mp3'),
-            new Audio('background_sound3.mp3'),
-            new Audio('background_sound4.mp3'),
-            new Audio('background_sound5.mp3'),
-            new Audio('background_sound6.mp3'),
-            new Audio('background_sound7.mp3'),
-            new Audio('background_sound8.mp3'),
-            new Audio('background_sound9.mp3')
-        ];
-        let currentTrackIndex = 0;
-        const jumpSound = new Audio('jumped.mp3');
-        const buttonClickSound = new Audio('click_on_button.mp3');
-        let isAudioStarted = false;
-
-        // Скины
         const skins = {
             default: { src: 'image.png', unlocked: true, room: 'Космос' },
             r2d2: { src: 'r2d2.png', unlocked: false, room: 'Звёздные войны' },
@@ -266,7 +231,6 @@
         let currentSkin = 'default';
         const playerImage = new Image();
         playerImage.src = skins[currentSkin].src;
-
         const platformTexture = new Image();
         platformTexture.src = 'platform_texture.png';
         const backgroundImage = new Image();
@@ -274,7 +238,7 @@
 
         let player = {
             x: 50,
-            y: 300,
+            y: 500,
             width: 40,
             height: 40,
             speed: 5,
@@ -299,15 +263,6 @@
         let gamePaused = false;
         let isRunning = false;
 
-        function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight - 150;
-            player.x = canvas.width / 10;
-            player.y = canvas.height - player.height;
-            initLevel(currentLevel);
-        }
-        window.addEventListener('resize', resizeCanvas);
-
         function loadProgress() {
             score = parseInt(localStorage.getItem('cosmoScore')) || 0;
             currentLevel = parseInt(localStorage.getItem('cosmoLevel')) || 1;
@@ -329,48 +284,29 @@
             localStorage.setItem('cosmoUnlockedSkins', JSON.stringify(Object.keys(skins).filter(skin => skins[skin].unlocked)));
         }
 
-        function playNextTrack() {
-            backgroundTracks[currentTrackIndex].pause();
-            currentTrackIndex = (currentTrackIndex + 1) % backgroundTracks.length;
-            backgroundTracks[currentTrackIndex].currentTime = 0;
-            backgroundTracks[currentTrackIndex].play().catch(err => console.log('Audio play failed:', err));
-        }
-
-        function startBackgroundMusic() {
-            if (!isAudioStarted) {
-                backgroundTracks.forEach(track => {
-                    track.volume = 0.5;
-                    track.addEventListener('ended', playNextTrack);
-                });
-                backgroundTracks[currentTrackIndex].play()
-                    .then(() => isAudioStarted = true)
-                    .catch(err => console.log('Music failed to start:', err));
-            }
-        }
-
         function generateLevel(levelNum) {
             let platforms = [];
-            let numPlatforms = Math.min(3 + Math.floor(levelNum / 5), 10);
+            let numPlatforms = Math.min(3 + Math.floor(levelNum / 5), 8);
             for (let i = 0; i < numPlatforms; i++) {
                 platforms.push({
-                    x: i * (canvas.width / numPlatforms) + Math.random() * 50,
-                    y: canvas.height - 50 - Math.random() * (canvas.height / 2),
-                    width: 100 + Math.random() * 100,
-                    height: 50
+                    x: i * (400 / numPlatforms) + Math.random() * 50,
+                    y: 600 - 50 - Math.random() * 300,
+                    width: 80 + Math.random() * 80,
+                    height: 30
                 });
             }
-            let collectiblesCount = Math.min(5 + Math.floor(levelNum / 2), 15);
+            let collectiblesCount = Math.min(5 + Math.floor(levelNum / 2), 10);
             let collectibles = [];
             for (let i = 0; i < collectiblesCount; i++) {
                 let platform = platforms[Math.floor(Math.random() * platforms.length)];
-                let collectibleX = platform.x + Math.random() * platform.width;
-                let collectibleY = platform.y - 20 - Math.random() * 50;
-                collectibleX = Math.max(0, Math.min(collectibleX, canvas.width - 20));
-                collectibleY = Math.max(0, Math.min(collectibleY, canvas.height - 20));
-                collectibles.push({ x: collectibleX, y: collectibleY, size: 20 });
+                collectibles.push({
+                    x: platform.x + Math.random() * platform.width,
+                    y: platform.y - 20 - Math.random() * 50,
+                    size: 20
+                });
             }
-            let meteorsCount = Math.min(2 + Math.floor(levelNum / 3), 8);
-            return { platforms, collectibles, collectiblesCount, meteorsCount };
+            let meteorsCount = Math.min(2 + Math.floor(levelNum / 3), 6);
+            return { platforms, collectibles, meteorsCount };
         }
 
         const levels = [];
@@ -383,14 +319,14 @@
             meteors = [];
             for (let i = 0; i < levelData.meteorsCount; i++) {
                 meteors.push({
-                    x: Math.random() * canvas.width,
+                    x: Math.random() * 400,
                     y: -20,
                     size: 20,
                     speed: 2 + Math.random() * (level / 5)
                 });
             }
-            player.x = canvas.width / 10;
-            player.y = canvas.height - player.height;
+            player.x = 50;
+            player.y = 500;
             player.dy = 0;
             player.grounded = false;
             collectedThisGame = 0;
@@ -412,7 +348,6 @@
                 keys.jump = true;
                 player.canJump = false;
                 player.jumps += 1;
-                jumpSound.play().catch(err => console.log('Jump sound failed:', err));
             }
         });
         jumpButton.addEventListener('touchend', () => {
@@ -420,70 +355,41 @@
             setTimeout(() => player.canJump = true, 200);
         });
 
-        function addButtonClickSound(buttonId) {
-            document.getElementById(buttonId).addEventListener('click', () => {
-                buttonClickSound.play().catch(err => console.log('Button sound failed:', err));
-            });
-        }
-
-        addButtonClickSound('shopButton');
-        addButtonClickSound('questsButton');
-        addButtonClickSound('skinsButton');
-        addButtonClickSound('exchangeButton');
-        addButtonClickSound('pauseButton');
-
         shopButton.addEventListener('click', () => {
-            const isOpen = shopDiv.classList.contains('open');
-            shopDiv.classList.toggle('open', !isOpen);
-            shopDiv.classList.toggle('closed', isOpen);
+            shopDiv.classList.toggle('open');
+            shopDiv.classList.toggle('closed');
             questsDiv.classList.remove('open');
-            questsDiv.classList.add('closed');
             skinsRoom.classList.remove('open');
-            skinsRoom.classList.add('closed');
             exchangeRoom.classList.remove('open');
-            exchangeRoom.classList.add('closed');
         });
 
         questsButton.addEventListener('click', () => {
-            const isOpen = questsDiv.classList.contains('open');
-            questsDiv.classList.toggle('open', !isOpen);
-            questsDiv.classList.toggle('closed', isOpen);
+            questsDiv.classList.toggle('open');
+            questsDiv.classList.toggle('closed');
             shopDiv.classList.remove('open');
-            shopDiv.classList.add('closed');
             skinsRoom.classList.remove('open');
-            skinsRoom.classList.add('closed');
             exchangeRoom.classList.remove('open');
-            exchangeRoom.classList.add('closed');
         });
 
         skinsButton.addEventListener('click', () => {
             openSkinsRoom();
             shopDiv.classList.remove('open');
-            shopDiv.classList.add('closed');
             questsDiv.classList.remove('open');
-            questsDiv.classList.add('closed');
             exchangeRoom.classList.remove('open');
-            exchangeRoom.classList.add('closed');
         });
 
         exchangeButton.addEventListener('click', () => {
-            const isOpen = exchangeRoom.classList.contains('open');
-            exchangeRoom.classList.toggle('open', !isOpen);
-            exchangeRoom.classList.toggle('closed', isOpen);
+            exchangeRoom.classList.toggle('open');
+            exchangeRoom.classList.toggle('closed');
             shopDiv.classList.remove('open');
-            shopDiv.classList.add('closed');
             questsDiv.classList.remove('open');
-            questsDiv.classList.add('closed');
             skinsRoom.classList.remove('open');
-            skinsRoom.classList.add('closed');
         });
 
         pauseButton.addEventListener('click', () => {
             gamePaused = !gamePaused;
             pauseButton.textContent = gamePaused ? 'Продолжить' : 'Пауза';
-            if (!gamePaused && lives > 0 && !isRunning) {
-                startGameLoop();
-            }
+            if (!gamePaused && lives > 0 && !isRunning) startGameLoop();
         });
 
         shopDiv.classList.add('closed');
@@ -552,25 +458,10 @@
             updateSkinsRoom();
         }
 
-        function closeSkinsRoom() {
-            skinsRoom.classList.remove('open');
-            skinsRoom.classList.add('closed');
-        }
-
-        function closeShop() {
-            shopDiv.classList.remove('open');
-            shopDiv.classList.add('closed');
-        }
-
-        function closeQuests() {
-            questsDiv.classList.remove('open');
-            questsDiv.classList.add('closed');
-        }
-
-        function closeExchange() {
-            exchangeRoom.classList.remove('open');
-            exchangeRoom.classList.add('closed');
-        }
+        function closeSkinsRoom() { skinsRoom.classList.remove('open'); skinsRoom.classList.add('closed'); }
+        function closeShop() { shopDiv.classList.remove('open'); shopDiv.classList.add('closed'); }
+        function closeQuests() { questsDiv.classList.remove('open'); questsDiv.classList.add('closed'); }
+        function closeExchange() { exchangeRoom.classList.remove('open'); exchangeRoom.classList.add('closed'); }
 
         function exchangePoints(points, crystalsReward) {
             if (score >= points) {
@@ -586,27 +477,16 @@
         function startGameLoop() {
             if (!isRunning) {
                 isRunning = true;
-                startBackgroundMusic();
                 requestAnimationFrame(update);
             }
         }
 
-        const FPS = 60;
-        const frameTime = 1000 / FPS;
-        let lastTime = 0;
-
-        function update(timestamp) {
-            if (!isRunning) return;
-            if (gamePaused || lives <= 0) {
+        function update() {
+            if (!isRunning || gamePaused || lives <= 0) {
                 isRunning = false;
                 if (lives <= 0) showGameOverScreen();
                 return;
             }
-            if (timestamp - lastTime < frameTime) {
-                requestAnimationFrame(update);
-                return;
-            }
-            lastTime = timestamp;
 
             if (keys.right) player.x += player.speed;
             if (keys.left) player.x -= player.speed;
@@ -631,13 +511,13 @@
                 }
             }
 
-            if (player.y >= canvas.height - player.height) {
-                player.y = canvas.height - player.height;
+            if (player.y >= 600 - player.height) {
+                player.y = 600 - player.height;
                 player.dy = 0;
                 player.grounded = true;
             }
             if (player.x < 0) player.x = 0;
-            if (player.x > canvas.width - player.width) player.x = canvas.width - player.width;
+            if (player.x > 400 - player.width) player.x = 400 - player.width;
 
             collectibles = collectibles.filter(c => {
                 if (player.x < c.x + c.size && player.x + player.width > c.x &&
@@ -661,9 +541,9 @@
                     updateDisplay();
                     saveProgress();
                 }
-                if (m.y > canvas.height) {
+                if (m.y > 600) {
                     m.y = -20;
-                    m.x = Math.random() * canvas.width;
+                    m.x = Math.random() * 400;
                     dodgedMeteors += 1;
                 }
             });
@@ -671,24 +551,24 @@
             if (hitByMeteor && lives > 0) {
                 gamePaused = true;
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillRect(0, 0, 400, 600);
                 ctx.fillStyle = '#fff';
                 ctx.font = '20px Arial';
-                ctx.fillText('Попадание! Продолжить?', canvas.width / 2 - 100, canvas.height / 2 - 20);
+                ctx.fillText('Попадание! Продолжить?', 100, 300);
                 const continueButton = document.createElement('button');
                 continueButton.textContent = 'Продолжить';
                 continueButton.style.position = 'absolute';
-                continueButton.style.top = `${canvas.height / 2 + 20}px`;
+                continueButton.style.top = '350px';
                 continueButton.style.left = '50%';
                 continueButton.style.transform = 'translateX(-50%)';
-                document.body.appendChild(continueButton);
+                document.getElementById('gameContainer').appendChild(continueButton);
                 continueButton.onclick = () => {
                     gamePaused = false;
-                    player.x = canvas.width / 10;
-                    player.y = canvas.height - player.height;
+                    player.x = 50;
+                    player.y = 500;
                     player.dy = 0;
-                    meteors.forEach(m => { m.y = -20 - Math.random() * 100; m.x = Math.random() * canvas.width; });
-                    document.body.removeChild(continueButton);
+                    meteors.forEach(m => { m.y = -20 - Math.random() * 100; m.x = Math.random() * 400; });
+                    document.getElementById('gameContainer').removeChild(continueButton);
                     startGameLoop();
                 };
             }
@@ -696,17 +576,17 @@
             if (collectibles.length === 0) {
                 gamePaused = true;
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillRect(0, 0, 400, 600);
                 ctx.fillStyle = '#fff';
                 ctx.font = '20px Arial';
-                ctx.fillText('Уровень пройден!', canvas.width / 2 - 100, canvas.height / 2 - 20);
+                ctx.fillText('Уровень пройден!', 100, 300);
                 const nextLevelButton = document.createElement('button');
                 nextLevelButton.textContent = 'Следующий уровень';
                 nextLevelButton.style.position = 'absolute';
-                nextLevelButton.style.top = `${canvas.height / 2 + 20}px`;
+                nextLevelButton.style.top = '350px';
                 nextLevelButton.style.left = '50%';
                 nextLevelButton.style.transform = 'translateX(-50%)';
-                document.body.appendChild(nextLevelButton);
+                document.getElementById('gameContainer').appendChild(nextLevelButton);
                 nextLevelButton.onclick = () => {
                     currentLevel++;
                     if (currentLevel > 100) {
@@ -716,18 +596,18 @@
                     updateDisplay();
                     saveProgress();
                     initLevel(currentLevel);
-                    document.body.removeChild(nextLevelButton);
+                    document.getElementById('gameContainer').removeChild(nextLevelButton);
                     gamePaused = false;
                     startGameLoop();
                 };
             }
 
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.clearRect(0, 0, 400, 600);
             if (backgroundImage.complete && backgroundImage.naturalWidth !== 0) {
-                ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
+                ctx.drawImage(backgroundImage, 0, 0, 400, 600);
             } else {
                 ctx.fillStyle = '#0f3460';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillRect(0, 0, 400, 600);
             }
 
             if (platformTexture.complete && platformTexture.naturalWidth !== 0) {
@@ -764,23 +644,25 @@
 
         function showGameOverScreen() {
             ctx.fillStyle = 'rgba(0, 0, 0, 1)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillRect(0, 0, 400, 600);
             ctx.fillStyle = '#fff';
             ctx.font = '20px Arial';
-            ctx.fillText('Игра окончена. Начать заново?', canvas.width / 2 - 120, canvas.height / 2 - 20);
+            ctx.fillText('Игра окончена. Начать заново?', 100, 300);
             const restartButton = document.createElement('button');
             restartButton.textContent = 'Начать заново';
             restartButton.style.position = 'absolute';
-            restartButton.style.top = `${canvas.height / 2 + 20}px`;
+            restartButton.style.top = '350px';
             restartButton.style.left = '50%';
             restartButton.style.transform = 'translateX(-50%)';
-            document.body.appendChild(restartButton);
+            document.getElementById('gameContainer').appendChild(restartButton);
             restartButton.onclick = () => {
                 lives = 3;
+                score = 0;
+                currentLevel = 1;
                 updateDisplay();
                 saveProgress();
                 initLevel(currentLevel);
-                document.body.removeChild(restartButton);
+                document.getElementById('gameContainer').removeChild(restartButton);
                 gamePaused = false;
                 startGameLoop();
             };
@@ -793,41 +675,9 @@
             crystalsDisplay.textContent = crystals;
         }
 
-        function checkResourcesAndStart() {
-            let resourcesLoaded = 0;
-            const totalResources = 3; // playerImage, platformTexture, backgroundImage
-
-            function resourceLoaded() {
-                resourcesLoaded++;
-                if (resourcesLoaded === totalResources) {
-                    resizeCanvas();
-                    loadProgress();
-                    initLevel(currentLevel);
-                    startGameLoop();
-                }
-            }
-
-            playerImage.onload = () => { console.log('Player image loaded'); resourceLoaded(); };
-            playerImage.onerror = () => { console.error('Player image failed to load'); resourceLoaded(); };
-            platformTexture.onload = () => { console.log('Platform texture loaded'); resourceLoaded(); };
-            platformTexture.onerror = () => { console.error('Platform texture failed to load'); resourceLoaded(); };
-            backgroundImage.onload = () => { console.log('Background image loaded'); resourceLoaded(); };
-            backgroundImage.onerror = () => { console.error('Background image failed to load'); resourceLoaded(); };
-
-            // Принудительный старт через 2 секунды, если ресурсы не загрузились
-            setTimeout(() => {
-                if (resourcesLoaded < totalResources) {
-                    console.log('Forced start due to resource timeout');
-                    resizeCanvas();
-                    loadProgress();
-                    initLevel(currentLevel);
-                    startGameLoop();
-                }
-            }, 2000);
-        }
-
-        // Запуск игры
-        checkResourcesAndStart();
+        loadProgress();
+        initLevel(currentLevel);
+        startGameLoop();
     </script>
 </body>
 </html>
