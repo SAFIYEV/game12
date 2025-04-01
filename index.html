@@ -15,14 +15,14 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            flex-direction: column;
+            font-family: Arial, sans-serif;
         }
         #gameContainer {
             position: relative;
             width: 400px;
-            height: 700px; /* Canvas + интерфейс */
+            height: 700px;
+            background-color: #1a1a2e;
             text-align: center;
-            font-family: Arial, sans-serif;
             color: #e94560;
         }
         canvas {
@@ -31,6 +31,7 @@
             background-color: #0f3460;
             display: block;
             border: 1px solid #e94560;
+            touch-action: none; /* Отключаем стандартные жесты */
         }
         h2 {
             margin: 5px 0;
@@ -47,6 +48,7 @@
             box-shadow: 0 4px 10px rgba(255, 51, 102, 0.5);
             transition: transform 0.2s, box-shadow 0.2s;
             font-weight: bold;
+            touch-action: manipulation; /* Улучшает сенсорную отзывчивость */
         }
         button:hover {
             transform: scale(1.1);
@@ -55,6 +57,7 @@
         #controls {
             position: absolute;
             bottom: 10px;
+            left: 0;
             width: 100%;
             display: flex;
             justify-content: space-between;
@@ -94,14 +97,14 @@
         #shop h3, #quests h3, #skinsRoom h3, #exchangeRoom h3 {
             color: #e94560;
             text-shadow: 0 0 5px rgba(233, 69, 96, 0.5);
+            margin: 0 0 10px;
         }
         #shop button, #exchangeRoom button {
-            padding: 8px 15px;
             width: 100%;
             margin: 5px 0;
         }
         #quests {
-            max-height: 80vh;
+            max-height: 500px;
             overflow-y: auto;
         }
         #quests p {
@@ -111,12 +114,12 @@
             border-radius: 8px;
             color: #fff;
         }
-        #skinsRoom.open, #shop.open, #quests.open, #exchangeRoom.open {
+        .open {
             opacity: 1;
             visibility: visible;
             transform: translate(-50%, -50%) scale(1);
         }
-        #skinsRoom.closed, #shop.closed, #quests.closed, #exchangeRoom.closed {
+        .closed {
             opacity: 0;
             visibility: hidden;
             transform: translate(-50%, -50%) scale(0.9);
@@ -168,14 +171,14 @@
             </div>
             <button id="jumpButton" class="control-button">^</button>
         </div>
-        <div id="shop">
+        <div id="shop" class="closed">
             <h3>Магазин</h3>
             <button onclick="buyItem('speed', 10)">Ускорение (10 кристаллов)</button>
             <button onclick="buyItem('size', 15)">Увеличение размера (15 кристаллов)</button>
             <button onclick="buyItem('life', 20)">+1 Жизнь (20 кристаллов)</button>
             <button onclick="closeShop()">Закрыть</button>
         </div>
-        <div id="quests">
+        <div id="quests" class="closed">
             <h3>Квесты</h3>
             <p id="quest1">Собери 5 кристаллов за игру (Награда: 5 кристаллов)</p>
             <p id="quest2">Достигни 3 уровня (Награда: 10 кристаллов)</p>
@@ -189,12 +192,12 @@
             <p id="quest10">Купи улучшение в магазине (Награда: 10 кристаллов)</p>
             <button onclick="closeQuests()">Закрыть</button>
         </div>
-        <div id="skinsRoom">
+        <div id="skinsRoom" class="closed">
             <h3>Гардеробная</h3>
             <div id="skinsList"></div>
             <button onclick="closeSkinsRoom()">Закрыть</button>
         </div>
-        <div id="exchangeRoom">
+        <div id="exchangeRoom" class="closed">
             <h3>Обмен</h3>
             <button onclick="exchangePoints(100, 1)">100 очков = 1 кристалл</button>
             <button onclick="exchangePoints(1000, 15)">1000 очков = 15 кристаллов</button>
@@ -222,6 +225,15 @@
         const exchangeRoom = document.getElementById('exchangeRoom');
         const skinsList = document.getElementById('skinsList');
 
+        // Аудио
+        const backgroundMusic = new Audio('background_music.mp3');
+        backgroundMusic.loop = true;
+        backgroundMusic.volume = 0.5;
+        const jumpSound = new Audio('jump_sound.mp3');
+        jumpSound.volume = 0.7;
+        let isAudioStarted = false;
+
+        // Скины
         const skins = {
             default: { src: 'image.png', unlocked: true, room: 'Космос' },
             r2d2: { src: 'r2d2.png', unlocked: false, room: 'Звёздные войны' },
@@ -284,6 +296,19 @@
             localStorage.setItem('cosmoUnlockedSkins', JSON.stringify(Object.keys(skins).filter(skin => skins[skin].unlocked)));
         }
 
+        function startBackgroundMusic() {
+            if (!isAudioStarted) {
+                backgroundMusic.play().then(() => {
+                    isAudioStarted = true;
+                }).catch(err => console.log('Background music failed:', err));
+            }
+        }
+
+        function playJumpSound() {
+            jumpSound.currentTime = 0;
+            jumpSound.play().catch(err => console.log('Jump sound failed:', err));
+        }
+
         function generateLevel(levelNum) {
             let platforms = [];
             let numPlatforms = Math.min(3 + Math.floor(levelNum / 5), 8);
@@ -338,21 +363,59 @@
 
         let keys = { right: false, left: false, jump: false };
 
+        // Сенсорное управление
         leftButton.addEventListener('touchstart', (e) => { e.preventDefault(); keys.left = true; });
-        leftButton.addEventListener('touchend', () => keys.left = false);
+        leftButton.addEventListener('touchend', (e) => { e.preventDefault(); keys.left = false; });
+        leftButton.addEventListener('mousedown', () => keys.left = true);
+        leftButton.addEventListener('mouseup', () => keys.left = false);
+
         rightButton.addEventListener('touchstart', (e) => { e.preventDefault(); keys.right = true; });
-        rightButton.addEventListener('touchend', () => keys.right = false);
+        rightButton.addEventListener('touchend', (e) => { e.preventDefault(); keys.right = false; });
+        rightButton.addEventListener('mousedown', () => keys.right = true);
+        rightButton.addEventListener('mouseup', () => keys.right = false);
+
         jumpButton.addEventListener('touchstart', (e) => {
             e.preventDefault();
             if (player.grounded && player.canJump && lives > 0 && !gamePaused) {
                 keys.jump = true;
                 player.canJump = false;
-                player.jumps += 1;
+                playJumpSound();
             }
         });
-        jumpButton.addEventListener('touchend', () => {
+        jumpButton.addEventListener('touchend', (e) => {
+            e.preventDefault();
             keys.jump = false;
             setTimeout(() => player.canJump = true, 200);
+        });
+        jumpButton.addEventListener('mousedown', () => {
+            if (player.grounded && player.canJump && lives > 0 && !gamePaused) {
+                keys.jump = true;
+                player.canJump = false;
+                playJumpSound();
+            }
+        });
+        jumpButton.addEventListener('mouseup', () => {
+            keys.jump = false;
+            setTimeout(() => player.canJump = true, 200);
+        });
+
+        // Клавиатурное управление
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = true;
+            if (e.key === 'ArrowRight' || e.key === 'd') keys.right = true;
+            if ((e.key === 'ArrowUp' || e.key === 'w' || e.key === ' ') && player.grounded && player.canJump && lives > 0 && !gamePaused) {
+                keys.jump = true;
+                player.canJump = false;
+                playJumpSound();
+            }
+        });
+        document.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = false;
+            if (e.key === 'ArrowRight' || e.key === 'd') keys.right = false;
+            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === ' ') {
+                keys.jump = false;
+                setTimeout(() => player.canJump = true, 200);
+            }
         });
 
         shopButton.addEventListener('click', () => {
@@ -390,12 +453,9 @@
             gamePaused = !gamePaused;
             pauseButton.textContent = gamePaused ? 'Продолжить' : 'Пауза';
             if (!gamePaused && lives > 0 && !isRunning) startGameLoop();
+            if (gamePaused) backgroundMusic.pause();
+            else if (isAudioStarted) backgroundMusic.play();
         });
-
-        shopDiv.classList.add('closed');
-        questsDiv.classList.add('closed');
-        skinsRoom.classList.add('closed');
-        exchangeRoom.classList.add('closed');
 
         function buyItem(item, cost) {
             if (crystals >= cost) {
@@ -477,6 +537,7 @@
         function startGameLoop() {
             if (!isRunning) {
                 isRunning = true;
+                startBackgroundMusic();
                 requestAnimationFrame(update);
             }
         }
@@ -666,6 +727,7 @@
                 gamePaused = false;
                 startGameLoop();
             };
+            backgroundMusic.pause();
         }
 
         function updateDisplay() {
@@ -675,9 +737,15 @@
             crystalsDisplay.textContent = crystals;
         }
 
+        // Инициализация
         loadProgress();
         initLevel(currentLevel);
         startGameLoop();
+
+        // Обработка клика для старта звука (из-за политики автозапуска)
+        document.addEventListener('click', () => {
+            if (!isAudioStarted) startBackgroundMusic();
+        }, { once: true });
     </script>
 </body>
 </html>
