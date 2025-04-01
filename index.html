@@ -181,8 +181,8 @@
     <canvas id="gameCanvas"></canvas>
     <div id="controls">
         <div id="left-controls">
-            <button id="leftButton" class="control-button">&lt;</button>
-            <button id="rightButton" class="control-button">&gt;</button>
+            <button id="leftButton" class="control-button"><</button>
+            <button id="rightButton" class="control-button">></button>
         </div>
         <button id="jumpButton" class="control-button">^</button>
     </div>
@@ -239,7 +239,7 @@
         const exchangeRoom = document.getElementById('exchangeRoom');
         const skinsList = document.getElementById('skinsList');
 
-        // Аудио
+        // Аудио (опционально, можно закомментировать, если нет файлов)
         const backgroundTracks = [
             new Audio('background_sound1.mp3'),
             new Audio('background_sound2.mp3'),
@@ -258,20 +258,18 @@
 
         // Скины
         const skins = {
-            default: { src: 'image.png', unlocked: true, room: 'Космос', roomEn: 'Space' },
-            r2d2: { src: 'r2d2.png', unlocked: false, room: 'Звёздные войны', roomEn: 'Star Wars' },
-            starlord: { src: 'star_lord.png', unlocked: false, room: 'Стражи Галактики', roomEn: 'Guardians of the Galaxy' },
-            optimus: { src: 'optimus_prime.png', unlocked: false, room: 'Трансформеры', roomEn: 'Transformers' }
+            default: { src: 'image.png', unlocked: true, room: 'Космос' },
+            r2d2: { src: 'r2d2.png', unlocked: false, room: 'Звёздные войны' },
+            starlord: { src: 'star_lord.png', unlocked: false, room: 'Стражи Галактики' },
+            optimus: { src: 'optimus_prime.png', unlocked: false, room: 'Трансформеры' }
         };
         let currentSkin = 'default';
         const playerImage = new Image();
         playerImage.src = skins[currentSkin].src;
 
-        // Текстура платформы
+        // Текстура платформы и фон
         const platformTexture = new Image();
         platformTexture.src = 'platform_texture.png';
-
-        // Фоновое изображение
         const backgroundImage = new Image();
         backgroundImage.src = 'background_image.jpg';
 
@@ -308,7 +306,8 @@
             canvas.height = window.innerHeight - 150; // Учитываем высоту интерфейса
             player.x = canvas.width / 10;
             player.y = canvas.height - player.height;
-            initLevel(currentLevel); // Перегенерация уровня при изменении размера
+            initLevel(currentLevel); // Перегенерация уровня
+            console.log('Canvas resized to:', canvas.width, 'x', canvas.height);
         }
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
@@ -324,6 +323,7 @@
             unlockedSkins.forEach(skin => skins[skin].unlocked = true);
             playerImage.src = skins[currentSkin].src;
             updateDisplay();
+            console.log('Progress loaded');
         }
 
         function saveProgress() {
@@ -333,6 +333,7 @@
             localStorage.setItem('cosmoCrystals', crystals);
             localStorage.setItem('cosmoSkin', currentSkin);
             localStorage.setItem('cosmoUnlockedSkins', JSON.stringify(Object.keys(skins).filter(skin => skins[skin].unlocked)));
+            console.log('Progress saved');
         }
 
         // Фоновая музыка
@@ -350,8 +351,8 @@
                     track.addEventListener('ended', playNextTrack);
                 });
                 backgroundTracks[currentTrackIndex].play()
-                    .then(() => isAudioStarted = true)
-                    .catch(err => console.log('Initial audio play failed:', err));
+                    .then(() => { isAudioStarted = true; console.log('Music started'); })
+                    .catch(err => console.log('Music failed to start:', err));
             }
         }
 
@@ -375,11 +376,7 @@
                 let collectibleY = platform.y - 20 - Math.random() * 50;
                 collectibleX = Math.max(0, Math.min(collectibleX, canvas.width - 20));
                 collectibleY = Math.max(0, Math.min(collectibleY, canvas.height - 20));
-                collectibles.push({
-                    x: collectibleX,
-                    y: collectibleY,
-                    size: 20
-                });
+                collectibles.push({ x: collectibleX, y: collectibleY, size: 20 });
             }
             let meteorsCount = Math.min(2 + Math.floor(levelNum / 3), 8);
             return { platforms, collectibles, collectiblesCount, meteorsCount };
@@ -410,12 +407,13 @@
             dodgedMeteors = 0;
             levelStartedLives = lives;
             gamePaused = false;
+            console.log('Level initialized:', level);
         }
 
         loadProgress();
         initLevel(currentLevel);
 
-        // Управление для мобильных устройств
+        // Управление
         let keys = { right: false, left: false, jump: false };
 
         leftButton.addEventListener('touchstart', (e) => { e.preventDefault(); keys.left = true; });
@@ -459,6 +457,7 @@
             skinsRoom.classList.add('closed');
             exchangeRoom.classList.remove('open');
             exchangeRoom.classList.add('closed');
+            console.log('Shop toggled:', !isOpen);
         });
 
         questsButton.addEventListener('click', () => {
@@ -471,6 +470,7 @@
             skinsRoom.classList.add('closed');
             exchangeRoom.classList.remove('open');
             exchangeRoom.classList.add('closed');
+            console.log('Quests toggled:', !isOpen);
         });
 
         skinsButton.addEventListener('click', () => {
@@ -481,6 +481,7 @@
             questsDiv.classList.add('closed');
             exchangeRoom.classList.remove('open');
             exchangeRoom.classList.add('closed');
+            console.log('Skins room opened');
         });
 
         exchangeButton.addEventListener('click', () => {
@@ -493,15 +494,16 @@
             questsDiv.classList.add('closed');
             skinsRoom.classList.remove('open');
             skinsRoom.classList.add('closed');
+            console.log('Exchange toggled:', !isOpen);
         });
 
         pauseButton.addEventListener('click', () => {
             gamePaused = !gamePaused;
             pauseButton.textContent = gamePaused ? 'Продолжить' : 'Пауза';
             if (!gamePaused && lives > 0) {
-                isRunning = false;
                 startGameLoop();
             }
+            console.log('Game paused:', gamePaused);
         });
 
         shopDiv.classList.add('closed');
@@ -518,6 +520,9 @@
                 if (item === 'life') lives += 1;
                 updateDisplay();
                 saveProgress();
+                console.log('Item bought:', item);
+            } else {
+                console.log('Not enough crystals for', item);
             }
         }
 
@@ -529,6 +534,7 @@
                 updateDisplay();
                 saveProgress();
                 alert(`Скин ${skin} разблокирован! Комната: ${skins[skin].room}`);
+                console.log('Skin unlocked:', skin);
             } else {
                 selectSkin(skin);
             }
@@ -541,8 +547,10 @@
                 updateDisplay();
                 saveProgress();
                 alert(`Выбран скин ${skin}. Комната: ${skins[skin].room}`);
+                console.log('Skin selected:', skin);
             } else {
                 alert('Скин не разблокирован!');
+                console.log('Skin not unlocked:', skin);
             }
         }
 
@@ -561,6 +569,7 @@
                 }
                 skinsList.appendChild(skinDiv);
             });
+            console.log('Skins room updated');
         }
 
         function openSkinsRoom() {
@@ -572,21 +581,25 @@
         function closeSkinsRoom() {
             skinsRoom.classList.remove('open');
             skinsRoom.classList.add('closed');
+            console.log('Skins room closed');
         }
 
         function closeShop() {
             shopDiv.classList.remove('open');
             shopDiv.classList.add('closed');
+            console.log('Shop closed');
         }
 
         function closeQuests() {
             questsDiv.classList.remove('open');
             questsDiv.classList.add('closed');
+            console.log('Quests closed');
         }
 
         function closeExchange() {
             exchangeRoom.classList.remove('open');
             exchangeRoom.classList.add('closed');
+            console.log('Exchange closed');
         }
 
         // Обмен очков на кристаллы
@@ -596,8 +609,10 @@
                 crystals += crystalsReward;
                 updateDisplay();
                 saveProgress();
+                console.log('Points exchanged:', points, 'for', crystalsReward, 'crystals');
             } else {
                 alert('Недостаточно очков!');
+                console.log('Not enough points for exchange');
             }
         }
 
@@ -606,6 +621,7 @@
             if (!isRunning) {
                 isRunning = true;
                 startBackgroundMusic();
+                console.log('Game loop started');
                 requestAnimationFrame(update);
             }
         }
@@ -615,6 +631,7 @@
         let lastTime = 0;
 
         function update(timestamp) {
+            if (!isRunning) return;
             if (gamePaused || lives <= 0) {
                 isRunning = false;
                 if (lives <= 0) showGameOverScreen();
@@ -626,6 +643,7 @@
             }
             lastTime = timestamp;
 
+            // Логика движения
             if (keys.right) player.x += player.speed;
             if (keys.left) player.x -= player.speed;
             if (keys.jump) {
@@ -657,6 +675,7 @@
             if (player.x < 0) player.x = 0;
             if (player.x > canvas.width - player.width) player.x = canvas.width - player.width;
 
+            // Сбор предметов
             collectibles = collectibles.filter(c => {
                 if (player.x < c.x + c.size && player.x + player.width > c.x &&
                     player.y < c.y + c.size && player.y + player.height > c.y) {
@@ -669,6 +688,7 @@
                 return true;
             });
 
+            // Метеоры
             let hitByMeteor = false;
             meteors.forEach(m => {
                 m.y += m.speed;
@@ -686,17 +706,18 @@
                 }
             });
 
+            // Попадание метеора
             if (hitByMeteor && lives > 0) {
                 gamePaused = true;
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
                 ctx.fillStyle = '#fff';
                 ctx.font = '20px Arial';
-                ctx.fillText('Попадание! Продолжить?', canvas.width / 2 - 150, canvas.height / 2 - 20);
+                ctx.fillText('Попадание! Продолжить?', canvas.width / 2 - 100, canvas.height / 2 - 20);
                 const continueButton = document.createElement('button');
                 continueButton.textContent = 'Продолжить';
                 continueButton.style.position = 'absolute';
-                continueButton.style.top = '60%';
+                continueButton.style.top = `${canvas.height / 2 + 20}px`;
                 continueButton.style.left = '50%';
                 continueButton.style.transform = 'translateX(-50%)';
                 document.body.appendChild(continueButton);
@@ -705,26 +726,24 @@
                     player.x = canvas.width / 10;
                     player.y = canvas.height - player.height;
                     player.dy = 0;
-                    meteors.forEach(m => {
-                        m.y = -20 - Math.random() * 100;
-                        m.x = Math.random() * canvas.width;
-                    });
+                    meteors.forEach(m => { m.y = -20 - Math.random() * 100; m.x = Math.random() * canvas.width; });
                     document.body.removeChild(continueButton);
                     startGameLoop();
                 };
             }
 
+            // Уровень пройден
             if (collectibles.length === 0) {
                 gamePaused = true;
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
                 ctx.fillStyle = '#fff';
                 ctx.font = '20px Arial';
-                ctx.fillText('Уровень пройден!', canvas.width / 2 - 150, canvas.height / 2 - 20);
+                ctx.fillText('Уровень пройден!', canvas.width / 2 - 100, canvas.height / 2 - 20);
                 const nextLevelButton = document.createElement('button');
                 nextLevelButton.textContent = 'Следующий уровень';
                 nextLevelButton.style.position = 'absolute';
-                nextLevelButton.style.top = '60%';
+                nextLevelButton.style.top = `${canvas.height / 2 + 20}px`;
                 nextLevelButton.style.left = '50%';
                 nextLevelButton.style.transform = 'translateX(-50%)';
                 document.body.appendChild(nextLevelButton);
@@ -744,6 +763,7 @@
             }
 
             // Отрисовка
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Очистка канваса
             if (backgroundImage.complete && backgroundImage.naturalWidth !== 0) {
                 ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
             } else {
@@ -788,11 +808,11 @@
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = '#fff';
             ctx.font = '20px Arial';
-            ctx.fillText('Игра окончена. Начать заново?', canvas.width / 2 - 150, canvas.height / 2 - 20);
+            ctx.fillText('Игра окончена. Начать заново?', canvas.width / 2 - 120, canvas.height / 2 - 20);
             const restartButton = document.createElement('button');
             restartButton.textContent = 'Начать заново';
             restartButton.style.position = 'absolute';
-            restartButton.style.top = '60%';
+            restartButton.style.top = `${canvas.height / 2 + 20}px`;
             restartButton.style.left = '50%';
             restartButton.style.transform = 'translateX(-50%)';
             document.body.appendChild(restartButton);
@@ -815,19 +835,22 @@
         }
 
         // Инициализация и старт
-        playerImage.onload = () => startGameLoop();
+        playerImage.onload = () => {
+            console.log('Player image loaded');
+            startGameLoop();
+        };
         playerImage.onerror = () => {
             console.error('Player image failed to load, using fallback');
-            startGameLoop();
+            startGameLoop(); // Запуск даже без изображения
         };
 
         platformTexture.onload = () => console.log('Platform texture loaded');
-        platformTexture.onerror = () => console.error('Platform texture failed to load, using fallback');
-
+        platformTexture.onerror = () => console.error('Platform texture failed to load');
         backgroundImage.onload = () => console.log('Background image loaded');
-        backgroundImage.onerror = () => console.error('Background image failed to load, using fallback');
+        backgroundImage.onerror = () => console.error('Background image failed to load');
 
-        startGameLoop();
+        console.log('Game initialization started');
+        startGameLoop(); // Немедленный запуск
     </script>
 </body>
 </html>
